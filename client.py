@@ -10,9 +10,10 @@ class ChatClient:
     def __init__(self, root):
         self.root = root
         self.root.title("局域网聊天客户端")
-        self.root.geometry("500x600")
+        self.root.geometry("550x650")
         
         # 客户端配置
+        self.server_host = ""  # 手动配置的服务器地址
         self.server_port = 8888
         self.client_socket = None
         self.connected = False
@@ -31,9 +32,33 @@ class ChatClient:
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
+        # 服务器配置框架
+        config_frame = ttk.LabelFrame(main_frame, text="服务器配置", padding="10")
+        config_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        # 服务器地址输入
+        ttk.Label(config_frame, text="服务器地址：").grid(row=0, column=0, sticky=tk.W)
+        self.server_host_entry = ttk.Entry(config_frame, width=20)
+        self.server_host_entry.grid(row=0, column=1, padx=(5, 5))
+        self.server_host_entry.insert(0, "127.0.0.1")
+        
+        # 服务器端口输入
+        ttk.Label(config_frame, text="端口：").grid(row=0, column=2, sticky=tk.W)
+        self.server_port_entry = ttk.Entry(config_frame, width=8)
+        self.server_port_entry.grid(row=0, column=3, padx=(5, 10))
+        self.server_port_entry.insert(0, "8888")
+        
+        # 连接按钮
+        connect_button = ttk.Button(config_frame, text="手动连接", command=self.connect_manual)
+        connect_button.grid(row=0, column=4)
+        
+        # 自动搜索按钮
+        search_button = ttk.Button(config_frame, text="自动搜索", command=self.reconnect)
+        search_button.grid(row=0, column=5, padx=(10, 0))
+        
         # 连接状态框架
         status_frame = ttk.LabelFrame(main_frame, text="连接状态", padding="10")
-        status_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        status_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         
         self.status_label = ttk.Label(status_frame, text="状态：未连接", foreground='red')
         self.status_label.grid(row=0, column=0, sticky=tk.W)
@@ -44,20 +69,16 @@ class ChatClient:
         self.user_label = ttk.Label(status_frame, text="用户名：未设置")
         self.user_label.grid(row=2, column=0, sticky=tk.W)
         
-        # 重新连接按钮
-        reconnect_button = ttk.Button(status_frame, text="重新连接", command=self.reconnect)
-        reconnect_button.grid(row=0, column=1, padx=(10, 0))
-        
         # 消息显示框架
         message_frame = ttk.LabelFrame(main_frame, text="聊天消息", padding="10")
-        message_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
+        message_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
         
         self.message_display = scrolledtext.ScrolledText(message_frame, width=50, height=20, state='disabled')
         self.message_display.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
         # 消息输入框架
         input_frame = ttk.LabelFrame(main_frame, text="发送消息", padding="10")
-        input_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
+        input_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
         
         self.message_entry = ttk.Entry(input_frame, width=40)
         self.message_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
@@ -217,12 +238,51 @@ class ChatClient:
             self.add_message("系统", "未找到可用的服务器", 'system')
             self.status_label.config(text="状态：未找到服务器", foreground='orange')
     
-    def reconnect(self):
-        """重新连接服务器"""
+    def connect_manual(self):
+        """手动连接到指定服务器"""
+        server_host = self.server_host_entry.get().strip()
+        server_port_str = self.server_port_entry.get().strip()
+        
+        if not server_host:
+            messagebox.showerror("错误", "请输入服务器地址！")
+            return
+        
+        try:
+            server_port = int(server_port_str)
+            if server_port < 1 or server_port > 65535:
+                raise ValueError("端口号无效")
+        except ValueError:
+            messagebox.showerror("错误", "请输入有效的端口号（1-65535）！")
+            return
+        
         if self.connected:
             self.disconnect()
         
-        self.add_message("系统", "正在重新连接服务器...", 'system')
+        self.add_message("系统", f"尝试连接到 {server_host}:{server_port}...", 'system')
+        
+        # 启动连接线程
+        connect_thread = threading.Thread(
+            target=self._connect_to_server_thread,
+            args=(server_host, server_port),
+            daemon=True
+        )
+        connect_thread.start()
+    
+    def _connect_to_server_thread(self, server_host, server_port):
+        """在后台线程中连接到指定服务器"""
+        self.server_port = server_port
+        if self.connect_to_server(server_host):
+            self.server_host = server_host
+        else:
+            self.add_message("系统", f"无法连接到 {server_host}:{server_port}", 'system')
+            self.status_label.config(text="状态：连接失败", foreground='red')
+    
+    def reconnect(self):
+        """重新连接服务器（自动搜索）"""
+        if self.connected:
+            self.disconnect()
+        
+        self.add_message("系统", "正在搜索并重新连接服务器...", 'system')
         self.search_and_connect()
     
     def disconnect(self):

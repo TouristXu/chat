@@ -91,6 +91,32 @@ class ChatServer:
         self.message_display.tag_config('system', foreground='gray')
         self.message_display.tag_config('error', foreground='red')
     
+    def get_local_ips(self):
+        """获取本地所有网络接口的IP地址"""
+        ips = []
+        try:
+            hostname = socket.gethostname()
+            ip_addresses = socket.gethostbyname_ex(hostname)[2]
+            for ip in ip_addresses:
+                # 过滤掉IPv6和回环地址
+                if '.' in ip and not ip.startswith('127.'):
+                    ips.append(ip)
+        except:
+            pass
+        
+        # 如果没有找到有效IP，尝试另一种方法
+        if not ips:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(("8.8.8.8", 80))
+                ip = s.getsockname()[0]
+                s.close()
+                ips.append(ip)
+            except:
+                ips.append("127.0.0.1")
+        
+        return ips
+    
     def start_server(self):
         """启动服务器"""
         try:
@@ -101,7 +127,13 @@ class ChatServer:
             self.running = True
             
             self.status_label.config(text="状态：运行中", foreground='green')
-            self.add_message("系统", f"服务器启动成功，监听 {self.host}:{self.port}", 'system')
+            
+            # 获取并显示所有本地IP地址
+            local_ips = self.get_local_ips()
+            ip_list = ", ".join(local_ips)
+            self.address_label.config(text=f"监听地址：{ip_list}:{self.port}")
+            self.add_message("系统", f"服务器启动成功，监听端口 {self.port}", 'system')
+            self.add_message("系统", f"可用连接地址：{ip_list}:{self.port}", 'system')
             
             # 启动接受连接的线程
             accept_thread = threading.Thread(target=self.accept_clients, daemon=True)
