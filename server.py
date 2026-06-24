@@ -9,7 +9,7 @@ class ChatServer:
     def __init__(self, root):
         self.root = root
         self.root.title("局域网聊天服务器")
-        self.root.geometry("600x700")
+        self.root.geometry("650x750")
         
         # 服务器配置
         self.host = '0.0.0.0'  # 监听所有网络接口
@@ -18,6 +18,10 @@ class ChatServer:
         self.clients = {}  # {client_socket: client_address}
         self.client_names = {}  # {client_socket: client_name}
         self.running = False
+        
+        # 日志配置
+        self.log_file = None
+        self.log_file_path = ""
         
         # 创建界面
         self.create_ui()
@@ -43,6 +47,9 @@ class ChatServer:
         
         self.client_count_label = ttk.Label(info_frame, text="连接客户端：0")
         self.client_count_label.grid(row=2, column=0, sticky=tk.W)
+        
+        self.log_file_label = ttk.Label(info_frame, text="日志文件：未创建", foreground='gray')
+        self.log_file_label.grid(row=3, column=0, sticky=tk.W)
         
         # 客户端列表框架
         client_frame = ttk.LabelFrame(main_frame, text="连接的客户端", padding="10")
@@ -117,6 +124,34 @@ class ChatServer:
         
         return ips
     
+    def create_log_file(self):
+        """创建日志文件"""
+        try:
+            # 生成日志文件名，包含日期
+            log_date = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.log_file_path = f"chat_log_{log_date}.txt"
+            self.log_file = open(self.log_file_path, 'w', encoding='utf-8')
+            self.log_file.write(f"=== 服务器启动日志 ===\n")
+            self.log_file.write(f"启动时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            self.log_file.write(f"监听端口: {self.port}\n")
+            self.log_file.write("="*50 + "\n\n")
+            self.log_file.flush()
+            self.log_file_label.config(text=f"日志文件：{self.log_file_path}", foreground='blue')
+            self.add_message("系统", f"日志文件已创建：{self.log_file_path}", 'system')
+        except Exception as e:
+            self.add_message("错误", f"创建日志文件失败：{str(e)}", 'error')
+        
+    def write_log(self, message_type, sender, message):
+        """写入日志到文件"""
+        if self.log_file:
+            try:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                log_line = f"[{timestamp}] [{message_type}] {sender}: {message}\n"
+                self.log_file.write(log_line)
+                self.log_file.flush()
+            except Exception as e:
+                pass
+    
     def start_server(self):
         """启动服务器"""
         try:
@@ -125,6 +160,9 @@ class ChatServer:
             self.server_socket.bind((self.host, self.port))
             self.server_socket.listen(5)
             self.running = True
+            
+            # 创建日志文件
+            self.create_log_file()
             
             self.status_label.config(text="状态：运行中", foreground='green')
             
@@ -278,6 +316,9 @@ class ChatServer:
         self.message_display.insert(tk.END, formatted_message, message_type)
         self.message_display.config(state='disabled')
         self.message_display.see(tk.END)
+        
+        # 写入日志文件
+        self.write_log(message_type.upper(), sender, message)
     
     def on_closing(self):
         """窗口关闭时的处理"""
@@ -287,6 +328,17 @@ class ChatServer:
         if self.server_socket:
             try:
                 self.server_socket.close()
+            except:
+                pass
+        
+        # 关闭日志文件
+        if self.log_file:
+            try:
+                self.log_file.write("\n" + "="*50 + "\n")
+                self.log_file.write(f"服务器关闭时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                self.log_file.write("=== 服务器关闭 ===")
+                self.log_file.close()
+                self.add_message("系统", "日志文件已保存", 'system')
             except:
                 pass
         

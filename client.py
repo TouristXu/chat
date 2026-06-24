@@ -150,6 +150,7 @@ class ChatClient:
     
     def search_server(self):
         """搜索局域网内的服务器"""
+        search_start = time.time()
         local_ip = self.get_local_ip()
         self.add_message("系统", f"正在搜索服务器... 本地IP: {local_ip}", 'system')
         
@@ -164,6 +165,8 @@ class ChatClient:
         search_ips = ip_range[:50]  # 最多搜索50个IP
         
         found_servers = []
+        total_tries = 0
+        success_tries = 0
         
         # 创建socket用于检测
         test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -171,29 +174,49 @@ class ChatClient:
         
         for ip in search_ips:
             try:
+                total_tries += 1
+                ip_start = time.time()
                 result = test_socket.connect_ex((ip, self.server_port))
+                ip_elapsed = (time.time() - ip_start) * 1000  # 毫秒
+                
                 if result == 0:
+                    success_tries += 1
                     found_servers.append(ip)
-                    self.add_message("系统", f"发现服务器: {ip}:{self.server_port}", 'system')
+                    self.add_message("系统", f"发现服务器: {ip}:{self.server_port} (耗时: {ip_elapsed:.2f}ms)", 'system')
             except KeyboardInterrupt:
                 break
-            except:
+            except Exception as e:
                 pass
         
         test_socket.close()
+        search_elapsed = (time.time() - search_start) * 1000  # 毫秒
+        
+        self.add_message("系统", f"搜索完成！扫描 {total_tries} 个IP，找到 {len(found_servers)} 个服务器，总耗时: {search_elapsed:.2f}ms", 'system')
         
         return found_servers
     
     def connect_to_server(self, server_ip):
         """连接到指定服务器"""
+        connect_start = time.time()
+        self.add_message("系统", f"正在连接到 {server_ip}:{self.server_port}...", 'system')
+        
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.settimeout(5)  # 设置连接超时
+            
+            # 连接服务器
+            connect_start_inner = time.time()
             self.client_socket.connect((server_ip, self.server_port))
+            connect_elapsed = (time.time() - connect_start_inner) * 1000
+            self.add_message("系统", f"TCP连接成功 (耗时: {connect_elapsed:.2f}ms)", 'system')
+            
             self.client_socket.settimeout(None)  # 移除超时
             
             # 发送用户名
+            send_start = time.time()
             self.client_socket.send(self.client_name.encode('utf-8'))
+            send_elapsed = (time.time() - send_start) * 1000
+            self.add_message("系统", f"用户名发送成功 (耗时: {send_elapsed:.2f}ms)", 'system')
             
             self.connected = True
             self.running = True
@@ -204,7 +227,8 @@ class ChatClient:
             self.message_entry.config(state='normal')
             self.send_button.config(state='normal')
             
-            self.add_message("系统", f"成功连接到服务器 {server_ip}:{self.server_port}", 'system')
+            total_elapsed = (time.time() - connect_start) * 1000
+            self.add_message("系统", f"成功连接到服务器 {server_ip}:{self.server_port} (总耗时: {total_elapsed:.2f}ms)", 'system')
             
             # 启动接收消息的线程
             receive_thread = threading.Thread(target=self.receive_messages, daemon=True)
@@ -212,8 +236,17 @@ class ChatClient:
             
             return True
             
+        except socket.timeout:
+            elapsed = (time.time() - connect_start) * 1000
+            self.add_message("错误", f"连接服务器超时 ({elapsed:.2f}ms)", 'error')
+            return False
+        except ConnectionRefusedError:
+            elapsed = (time.time() - connect_start) * 1000
+            self.add_message("错误", f"连接被拒绝 - 服务器可能未启动 ({elapsed:.2f}ms)", 'error')
+            return False
         except Exception as e:
-            self.add_message("错误", f"连接服务器失败：{str(e)}", 'error')
+            elapsed = (time.time() - connect_start) * 1000
+            self.add_message("错误", f"连接服务器失败：{str(e)} ({elapsed:.2f}ms)", 'error')
             return False
     
     def search_and_connect(self):
