@@ -7,9 +7,20 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 # 聊天服务器配置
-CHAT_SERVER_HOST = '127.0.0.1'
+CHAT_SERVER_HOST = '127.0.0.1'  # 使用本地回环地址连接聊天服务器
 CHAT_SERVER_PORT = 8888
 WEB_SERVER_PORT = 8080
+
+def get_local_ip():
+    """获取本地IP地址"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return '127.0.0.1'
 
 # 存储Web客户端
 web_clients = {}  # {client_socket: client_info}
@@ -24,43 +35,71 @@ class ChatWebSocketHandler:
         self.handshake_done = False
         self.buffer = ""
         self.username = f"Web用户_{int(time.time() % 10000)}"
+        print(f"[WebSocket] 新建连接: {self.client_address}")
     
     def handle_handshake(self, data):
         """处理WebSocket握手"""
-        lines = data.decode('utf-8').split('\r\n')
-        headers = {}
-        for line in lines:
-            if ':' in line:
-                key, value = line.split(':', 1)
-                headers[key.strip()] = value.strip()
+        print(f"[WebSocket] 开始握手 - 客户端: {self.client_address}")
+        print(f"[WebSocket] 接收到数据长度: {len(data)} bytes")
         
-        if 'Upgrade' in headers and headers['Upgrade'].lower() == 'websocket':
-            sec_key = headers.get('Sec-WebSocket-Key', '')
-            import hashlib
-            import base64
-            accept_key = base64.b64encode(hashlib.sha1((sec_key + self.GUID).encode()).digest()).decode()
+        try:
+            lines = data.decode('utf-8').split('\r\n')
+            print(f"[WebSocket] 请求行: {lines[0] if lines else '空'}")
             
-            response = (
-                f"HTTP/1.1 101 Switching Protocols\r\n"
-                f"Upgrade: websocket\r\n"
-                f"Connection: Upgrade\r\n"
-                f"Sec-WebSocket-Accept: {accept_key}\r\n"
-                f"\r\n"
-            )
-            self.client_socket.send(response.encode())
-            self.handshake_done = True
-            return True
-        return False
+            headers = {}
+            for line in lines:
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    headers[key.strip()] = value.strip()
+            
+            # 打印关键头部
+            print(f"[WebSocket] Host: {headers.get('Host', '未知')}")
+            print(f"[WebSocket] Upgrade: {headers.get('Upgrade', '未知')}")
+            print(f"[WebSocket] Connection: {headers.get('Connection', '未知')}")
+            print(f"[WebSocket] Sec-WebSocket-Key: {headers.get('Sec-WebSocket-Key', '未知')}")
+            print(f"[WebSocket] Sec-WebSocket-Version: {headers.get('Sec-WebSocket-Version', '未知')}")
+            
+            if 'Upgrade' in headers and headers['Upgrade'].lower() == 'websocket':
+                sec_key = headers.get('Sec-WebSocket-Key', '')
+                import hashlib
+                import base64
+                accept_key = base64.b64encode(hashlib.sha1((sec_key + self.GUID).encode()).digest()).decode()
+                
+                print(f"[WebSocket] 生成Accept Key: {accept_key}")
+                
+                response = (
+                    f"HTTP/1.1 101 Switching Protocols\r\n"
+                    f"Upgrade: websocket\r\n"
+                    f"Connection: Upgrade\r\n"
+                    f"Sec-WebSocket-Accept: {accept_key}\r\n"
+                    f"\r\n"
+                )
+                
+                send_len = self.client_socket.send(response.encode())
+                print(f"[WebSocket] 握手响应已发送: {send_len} bytes")
+                
+                self.handshake_done = True
+                print(f"[WebSocket] 握手成功 - 客户端: {self.client_address}")
+                return True
+            else:
+                print(f"[WebSocket] 握手失败: 不是WebSocket请求")
+                return False
+        except Exception as e:
+            print(f"[WebSocket] 握手异常: {type(e).__name__}: {str(e)}")
+            return False
     
     def parse_frame(self, data):
         """解析WebSocket帧"""
         if len(data) < 2:
+            print(f"[WebSocket] 帧数据不足: {len(data)} bytes")
             return None
         
         fin = (data[0] >> 7) & 1
         opcode = data[0] & 0x0F
         mask = (data[1] >> 7) & 1
         payload_len = data[1] & 0x7F
+        
+        print(f"[WebSocket] 帧解析 - FIN: {fin}, Opcode: {opcode}, Mask: {mask}, PayloadLen: {payload_len}")
         
         index = 2
         if payload_len == 126:
@@ -79,10 +118,15 @@ class ChatWebSocketHandler:
         if mask:
             payload = bytes([payload[i] ^ mask_key[i % 4] for i in range(len(payload))])
         
-        return payload.decode('utf-8')
+        message = payload.decode('utf-8')
+        print(f"[WebSocket] 解析消息: {message[:50]}..." if len(message) > 50 else f"[WebSocket] 解析消息: {message}")
+        
+        return message
     
     def send_frame(self, message):
         """发送WebSocket帧"""
+        print(f"[WebSocket] 准备发送消息: {message[:50]}..." if len(message) > 50 else f"[WebSocket] 准备发送消息: {message}")
+        
         payload = message.encode('utf-8')
         payload_len = len(payload)
         
@@ -99,7 +143,14 @@ class ChatWebSocketHandler:
             frame.extend(payload_len.to_bytes(8, 'big'))
         
         frame.extend(payload)
-        self.client_socket.send(frame)
+        
+        try:
+            send_len = self.client_socket.send(frame)
+            print(f"[WebSocket] 消息发送成功: {send_len} bytes")
+            return True
+        except Exception as e:
+            print(f"[WebSocket] 消息发送失败: {type(e).__name__}: {str(e)}")
+            return False
 
 class ChatClient:
     """连接到聊天服务器的客户端"""
@@ -107,48 +158,87 @@ class ChatClient:
         self.web_handler = web_handler
         self.chat_socket = None
         self.running = False
+        print(f"[ChatClient] 新建实例 - 用户名: {web_handler.username}")
     
     def connect_to_chat_server(self):
         """连接到聊天服务器"""
+        print(f"[ChatClient] 开始连接聊天服务器 - {CHAT_SERVER_HOST}:{CHAT_SERVER_PORT}")
+        
         try:
+            # 创建socket
             self.chat_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.chat_socket.settimeout(5)  # 设置超时
+            print(f"[ChatClient] Socket创建成功")
+            
+            # 连接到聊天服务器
+            start_time = time.time()
             self.chat_socket.connect((CHAT_SERVER_HOST, CHAT_SERVER_PORT))
+            connect_time = (time.time() - start_time) * 1000
+            print(f"[ChatClient] 连接成功 - 耗时: {connect_time:.2f}ms")
+            
+            self.chat_socket.settimeout(None)  # 移除超时
             
             # 发送用户名
-            self.chat_socket.send(self.web_handler.username.encode('utf-8'))
+            send_len = self.chat_socket.send(self.web_handler.username.encode('utf-8'))
+            print(f"[ChatClient] 用户名发送成功: {self.web_handler.username} ({send_len} bytes)")
             
             self.running = True
             
             # 启动接收消息线程
             receive_thread = threading.Thread(target=self.receive_messages, daemon=True)
             receive_thread.start()
+            print(f"[ChatClient] 消息接收线程已启动")
             
             return True
+            
+        except socket.timeout:
+            print(f"[ChatClient] 连接超时 - {CHAT_SERVER_HOST}:{CHAT_SERVER_PORT}")
+            return False
+        except ConnectionRefusedError:
+            print(f"[ChatClient] 连接被拒绝 - {CHAT_SERVER_HOST}:{CHAT_SERVER_PORT} (聊天服务器可能未启动)")
+            return False
+        except OSError as e:
+            print(f"[ChatClient] 网络错误 - {e.errno}: {str(e)}")
+            return False
         except Exception as e:
-            print(f"连接聊天服务器失败: {e}")
+            print(f"[ChatClient] 连接失败: {type(e).__name__}: {str(e)}")
             return False
     
     def receive_messages(self):
         """接收聊天服务器消息"""
+        print(f"[ChatClient] 开始接收消息循环")
+        
         while self.running:
             try:
                 data = self.chat_socket.recv(1024)
                 if data:
+                    print(f"[ChatClient] 接收到数据: {len(data)} bytes")
+                    
                     try:
                         message_dict = json.loads(data.decode('utf-8'))
+                        print(f"[ChatClient] JSON消息: {message_dict}")
                         self.web_handler.send_frame(json.dumps(message_dict))
-                    except:
+                    except json.JSONDecodeError:
                         # 处理纯文本消息
-                        self.web_handler.send_frame(data.decode('utf-8'))
+                        text_message = data.decode('utf-8')
+                        print(f"[ChatClient] 纯文本消息: {text_message[:50]}...")
+                        self.web_handler.send_frame(text_message)
                 else:
+                    print(f"[ChatClient] 连接已断开 (空数据)")
                     break
+            except socket.timeout:
+                continue
             except Exception as e:
+                print(f"[ChatClient] 接收消息异常: {type(e).__name__}: {str(e)}")
                 break
         
         self.running = False
+        print(f"[ChatClient] 消息循环结束")
+        
         if self.chat_socket:
             try:
                 self.chat_socket.close()
+                print(f"[ChatClient] Socket已关闭")
             except:
                 pass
     
@@ -398,21 +488,31 @@ class WebChatHandler(BaseHTTPRequestHandler):
         function connect() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const host = window.location.hostname || 'localhost';
-            const port = window.location.port ? ':' + window.location.port : '';
+            const webServerPort = '8080';  // 网页服务器固定端口
             
-            ws = new WebSocket(`${protocol}//${host}:${port}/chat`);
+            const wsUrl = `${protocol}//${host}:${webServerPort}/chat`;
+            console.log(`[WebSocket] 尝试连接: ${wsUrl}`);
+            
+            addMessage('系统', `正在连接到网页服务器: ${host}:${webServerPort}...`, 'system');
+            addMessage('系统', `WebSocket端点: ${wsUrl}`, 'system');
+            
+            ws = new WebSocket(wsUrl);
             
             ws.onopen = function() {
+                console.log('[WebSocket] 连接成功');
                 document.getElementById('status').textContent = '在线';
                 document.getElementById('status').className = 'status-online';
-                document.getElementById('connectionInfo').textContent = '已连接到服务器';
+                document.getElementById('connectionInfo').textContent = `已连接到 ${host}:${port}`;
                 
-                addMessage('系统', '成功连接到聊天服务器！', 'system');
+                addMessage('系统', 'WebSocket连接成功！', 'system');
+                addMessage('系统', '正在连接到聊天服务器...', 'system');
             };
             
             ws.onmessage = function(event) {
+                console.log(`[WebSocket] 接收到消息: ${event.data.length} bytes`);
                 try {
                     const data = JSON.parse(event.data);
+                    console.log('[WebSocket] JSON消息:', data);
                     if (data.type === 'client' || data.type === 'server') {
                         addMessage(data.name, data.message, data.type);
                     } else if (data.type === 'system') {
@@ -420,23 +520,34 @@ class WebChatHandler(BaseHTTPRequestHandler):
                     }
                 } catch (e) {
                     // 处理纯文本消息
+                    console.log(`[WebSocket] 纯文本消息: ${event.data}`);
                     addMessage('服务器', event.data, 'server');
                 }
             };
             
             ws.onerror = function(error) {
+                console.error('[WebSocket] 连接错误:', error);
                 document.getElementById('status').textContent = '错误';
                 document.getElementById('status').className = 'status-offline';
-                addMessage('系统', '连接出现错误', 'system');
+                addMessage('系统', `连接错误: ${error.type || '未知错误'}`, 'system');
             };
             
-            ws.onclose = function() {
+            ws.onclose = function(event) {
+                console.log(`[WebSocket] 连接关闭 - 代码: ${event.code}, 原因: ${event.reason}`);
                 document.getElementById('status').textContent = '离线';
                 document.getElementById('status').className = 'status-offline';
-                document.getElementById('connectionInfo').textContent = '连接已断开';
-                addMessage('系统', '与服务器的连接已断开', 'system');
+                document.getElementById('connectionInfo').textContent = `连接已断开 (${event.code})`;
+                
+                let reason = '未知原因';
+                if (event.code === 1000) {
+                    reason = '正常关闭';
+                } else if (event.code === 1006) {
+                    reason = '异常断开';
+                }
+                addMessage('系统', `连接已断开: ${reason}`, 'system');
                 
                 // 尝试重新连接
+                addMessage('系统', '3秒后尝试重新连接...', 'system');
                 setTimeout(connect, 3000);
             };
         }
@@ -583,8 +694,19 @@ def start_web_server():
     server_address = ('0.0.0.0', WEB_SERVER_PORT)
     httpd = HTTPServer(server_address, WebChatHandler)
     
-    print(f"Web服务器已启动，监听端口 {WEB_SERVER_PORT}")
-    print(f"访问地址: http://localhost:{WEB_SERVER_PORT}")
+    local_ip = get_local_ip()
+    
+    print("="*60)
+    print("🌐 Web聊天服务器启动信息")
+    print("="*60)
+    print(f"监听地址: 0.0.0.0:{WEB_SERVER_PORT}")
+    print(f"本地回环地址: http://localhost:{WEB_SERVER_PORT}")
+    print(f"局域网地址: http://{local_ip}:{WEB_SERVER_PORT}")
+    print(f"聊天服务器地址: {CHAT_SERVER_HOST}:{CHAT_SERVER_PORT}")
+    print("="*60)
+    print("WebSocket端点: ws://localhost:{WEB_SERVER_PORT}/chat")
+    print("日志输出已启用，可查看连接状态")
+    print("="*60)
     
     try:
         httpd.serve_forever()

@@ -6,3 +6,262 @@
 [2026-06-24 16:24:13] [SYSTEM] 系统: 日志文件已创建：chat_log_20260624_162413.txt
 [2026-06-24 16:24:13] [SYSTEM] 系统: 服务器启动成功，监听端口 8888
 [2026-06-24 16:24:13] [SYSTEM] 系统: 可用连接地址：172.29.5.223:8888
+[2026-06-24 17:08:16] [SYSTEM] 系统: 服务器已最小化到任务栏，右键点击图标可恢复窗口
+[2026-06-24 17:08:19] [SYSTEM] 系统: 服务器已最小化到任务栏，右键点击图标可恢复窗口
+[2026-06-24 17:08:23] [SYSTEM] 系统: 服务器已最小化到任务栏，右键点击图标可恢复窗口
+[2026-06-24 17:08:30] [SYSTEM] 系统: 服务器已最小化到任务栏，右键点击图标可恢复窗口
+[2026-06-24 17:08:35] [SYSTEM] 系统: 服务器已最小化到任务栏，右键点击图标可恢复窗口
+[2026-06-24 17:09:02] [SYSTEM] 系统: 服务器已最小化到任务栏，右键点击图标可恢复窗口
+[2026-06-24 17:09:23] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64669)
+[2026-06-24 17:09:23] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64670)
+[2026-06-24 17:09:23] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64669)) 加入聊天
+[2026-06-24 17:09:23] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:24] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64673)
+[2026-06-24 17:09:24] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64670)) 加入聊天
+[2026-06-24 17:09:24] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:24] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64674)
+[2026-06-24 17:09:25] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64673)) 加入聊天
+[2026-06-24 17:09:25] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:29] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64677)
+[2026-06-24 17:09:30] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64674)) 加入聊天
+[2026-06-24 17:09:30] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:51] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64692)
+[2026-06-24 17:09:51] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64677)) 加入聊天
+[2026-06-24 17:09:51] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:52] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64697)
+[2026-06-24 17:09:52] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64692)) 加入聊天
+[2026-06-24 17:09:52] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:54] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64698)
+[2026-06-24 17:09:54] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64697)) 加入聊天
+[2026-06-24 17:09:54] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:56] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64698)) 加入聊天
+[2026-06-24 17:09:56] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64699)
+[2026-06-24 17:09:56] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64700)
+[2026-06-24 17:09:56] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:57] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64699)) 加入聊天
+[2026-06-24 17:09:57] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:57] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64701)
+[2026-06-24 17:09:57] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64700)) 加入聊天
+[2026-06-24 17:09:57] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:09:58] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 64702)
+[2026-06-24 17:09:58] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ (('172.29.5.223', 64701)) 加入聊天
+[2026-06-24 17:09:58] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+ 离开聊天
+[2026-06-24 17:10:11] [SYSTEM] 系统: 服务器已最小化到任务栏，右键点击图标可恢复窗口
+[2026-06-24 17:10:15] [SYSTEM] 系统: 服务器已最小化到任务栏，右键点击图标可恢复窗口
+[2026-06-24 17:11:49] [SYSTEM] 系统: 服务器已最小化到任务栏，右键点击图标可恢复窗口
