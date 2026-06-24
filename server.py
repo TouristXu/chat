@@ -251,6 +251,13 @@ class ChatServer:
         """窗口关闭时的处理"""
         self.running = False
         
+        # 先关闭服务器socket，打破 accept 的阻塞
+        if self.server_socket:
+            try:
+                self.server_socket.close()
+            except:
+                pass
+        
         # 通知所有客户端服务器关闭
         self.broadcast_message({
             'type': 'system',
@@ -261,13 +268,6 @@ class ChatServer:
         for client_socket in list(self.clients.keys()):
             try:
                 client_socket.close()
-            except:
-                pass
-        
-        # 关闭服务器socket
-        if self.server_socket:
-            try:
-                self.server_socket.close()
             except:
                 pass
         

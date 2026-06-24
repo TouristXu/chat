@@ -22,11 +22,8 @@ class ChatClient:
         # 创建界面
         self.create_ui()
         
-        # 询问用户名
-        self.ask_username()
-        
-        # 搜索并连接服务器
-        self.search_and_connect()
+        # 延迟执行初始化，确保窗口完全初始化
+        self.root.after(100, self.init_after_ui)
     
     def create_ui(self):
         """创建用户界面"""
@@ -157,10 +154,10 @@ class ChatClient:
                 if result == 0:
                     found_servers.append(ip)
                     self.add_message("系统", f"发现服务器: {ip}:{self.server_port}", 'system')
-            except:
-                pass
             except KeyboardInterrupt:
                 break
+            except:
+                pass
         
         test_socket.close()
         
@@ -316,6 +313,14 @@ class ChatClient:
         self.message_display.insert(tk.END, formatted_message, message_type)
         self.message_display.config(state='disabled')
         self.message_display.see(tk.END)
+    
+    def init_after_ui(self):
+        """窗口初始化完成后执行的操作"""
+        # 询问用户名
+        self.ask_username()
+        
+        # 搜索并连接服务器
+        self.search_and_connect()
     
     def on_closing(self):
         """窗口关闭时的处理"""
