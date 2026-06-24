@@ -635,22 +635,34 @@ class WebChatHandler(BaseHTTPRequestHandler):
                 # 创建聊天客户端
                 chat_client = ChatClient(ws_handler)
                 if chat_client.connect_to_chat_server():
+                    print(f"[WebSocket] Web客户端已连接到聊天服务器")
+                    ws_handler.send_frame(json.dumps({'type': 'system', 'message': '已连接到聊天服务器'}))
+                    
                     # 处理消息循环
                     while ws_handler.handshake_done:
                         try:
                             data = client_socket.recv(1024)
                             if not data:
+                                print(f"[WebSocket] 客户端断开连接")
                                 break
                             
                             message = ws_handler.parse_frame(data)
                             if message:
                                 chat_client.send_message(message)
                         except Exception as e:
+                            print(f"[WebSocket] 消息循环异常: {type(e).__name__}: {str(e)}")
                             break
+                else:
+                    # 无法连接到聊天服务器
+                    print(f"[WebSocket] 无法连接到聊天服务器")
+                    ws_handler.send_frame(json.dumps({'type': 'system', 'message': '无法连接到聊天服务器，请确保聊天服务器已启动'}))
+                    # 延迟关闭连接
+                    time.sleep(1)
             else:
+                print(f"[WebSocket] 握手失败")
                 self.send_error(400, "Bad Request")
         except Exception as e:
-            pass
+            print(f"[WebSocket] 处理异常: {type(e).__name__}: {str(e)}")
     
     def handle_api_message(self):
         """处理API消息请求"""

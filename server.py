@@ -97,6 +97,10 @@ class ChatServer:
         self.log_file_label = ttk.Label(info_frame, text="日志文件：未创建", foreground='gray')
         self.log_file_label.grid(row=3, column=0, sticky=tk.W)
         
+        # 关闭服务器按钮
+        self.close_button = ttk.Button(info_frame, text="关闭服务器", command=self.quit_server, state='disabled')
+        self.close_button.grid(row=4, column=0, pady=(10, 0))
+        
         # 客户端列表框架
         client_frame = ttk.LabelFrame(main_frame, text="连接的客户端", padding="10")
         client_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(0, 5))
@@ -218,6 +222,9 @@ class ChatServer:
             self.address_label.config(text=f"监听地址：{ip_list}:{self.port}")
             self.add_message("系统", f"服务器启动成功，监听端口 {self.port}", 'system')
             self.add_message("系统", f"可用连接地址：{ip_list}:{self.port}", 'system')
+            
+            # 启用关闭服务器按钮
+            self.close_button.config(state='normal')
             
             # 启动接受连接的线程
             accept_thread = threading.Thread(target=self.accept_clients, daemon=True)
@@ -367,13 +374,13 @@ class ChatServer:
         self.write_log(message_type.upper(), sender, message)
     
     def on_closing(self):
-        """窗口关闭时的处理 - 最小化到任务栏"""
+        """窗口关闭时的处理"""
         if self.running:
-            # 最小化到任务栏
-            self.create_tray_icon()
-            self.hide_window()
+            # 如果服务器正在运行，提示确认
+            if messagebox.askyesno("确认关闭", "服务器正在运行中，确定要关闭吗？所有连接的客户端将被断开。"):
+                self.quit_server()
         else:
-            self.quit_server()
+            self.root.destroy()
     
     def quit_server(self):
         """真正退出服务器"""
