@@ -1,9 +1,10 @@
 import socket
 import threading
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk, scrolledtext, messagebox
 import json
 from datetime import datetime
+import os
 
 class ChatServer:
     def __init__(self, root):
@@ -23,11 +24,56 @@ class ChatServer:
         self.log_file = None
         self.log_file_path = ""
         
+        # 系统托盘图标
+        self.tray_icon = None
+        self.minimized = False
+        
         # 创建界面
         self.create_ui()
         
+        # 设置关闭事件处理
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
         # 启动服务器
         self.start_server()
+    
+    def create_tray_icon(self):
+        """创建系统托盘图标"""
+        try:
+            # 创建一个简单的托盘图标（使用tkinter的iconify功能）
+            self.root.iconbitmap(default='')
+            # 设置窗口图标
+            self.root.iconphoto(True, tk.PhotoImage(data=b'R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7'))
+            
+            # 创建右键菜单
+            self.tray_menu = tk.Menu(self.root, tearoff=0)
+            self.tray_menu.add_command(label="显示窗口", command=self.show_window)
+            self.tray_menu.add_command(label="退出", command=self.quit_server)
+            
+            # 添加一个隐藏的Toplevel窗口用于托盘菜单
+            self.tray_popup = tk.Toplevel(self.root)
+            self.tray_popup.withdraw()
+            self.tray_popup.bind("<Button-3>", self.show_tray_menu)
+            
+            self.add_message("系统", "服务器已最小化到任务栏，右键点击图标可恢复窗口", 'system')
+            
+        except Exception as e:
+            self.add_message("系统", f"创建托盘图标失败: {str(e)}", 'system')
+    
+    def show_tray_menu(self, event):
+        """显示托盘右键菜单"""
+        self.tray_menu.post(event.x_root, event.y_root)
+    
+    def show_window(self):
+        """显示窗口"""
+        self.root.deiconify()
+        self.root.lift()
+        self.minimized = False
+    
+    def hide_window(self):
+        """隐藏窗口到任务栏"""
+        self.root.iconify()
+        self.minimized = True
     
     def create_ui(self):
         """创建用户界面"""
@@ -321,41 +367,50 @@ class ChatServer:
         self.write_log(message_type.upper(), sender, message)
     
     def on_closing(self):
-        """窗口关闭时的处理"""
-        self.running = False
-        
-        # 先关闭服务器socket，打破 accept 的阻塞
-        if self.server_socket:
-            try:
-                self.server_socket.close()
-            except:
-                pass
-        
-        # 关闭日志文件
-        if self.log_file:
-            try:
-                self.log_file.write("\n" + "="*50 + "\n")
-                self.log_file.write(f"服务器关闭时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                self.log_file.write("=== 服务器关闭 ===")
-                self.log_file.close()
-                self.add_message("系统", "日志文件已保存", 'system')
-            except:
-                pass
-        
-        # 通知所有客户端服务器关闭
-        self.broadcast_message({
-            'type': 'system',
-            'message': '服务器即将关闭'
-        })
-        
-        # 关闭所有客户端连接
-        for client_socket in list(self.clients.keys()):
-            try:
-                client_socket.close()
-            except:
-                pass
-        
-        self.root.destroy()
+        """窗口关闭时的处理 - 最小化到任务栏"""
+        if self.running:
+            # 最小化到任务栏
+            self.create_tray_icon()
+            self.hide_window()
+        else:
+            self.quit_server()
+    
+    def quit_server(self):
+        """真正退出服务器"""
+        if messagebox.askyesno("确认退出", "确定要退出服务器吗？所有连接的客户端将被断开。"):
+            self.running = False
+            
+            # 先关闭服务器socket，打破 accept 的阻塞
+            if self.server_socket:
+                try:
+                    self.server_socket.close()
+                except:
+                    pass
+            
+            # 通知所有客户端服务器关闭
+            self.broadcast_message({
+                'type': 'system',
+                'message': '服务器即将关闭'
+            })
+            
+            # 关闭所有客户端连接
+            for client_socket in list(self.clients.keys()):
+                try:
+                    client_socket.close()
+                except:
+                    pass
+            
+            # 关闭日志文件
+            if self.log_file:
+                try:
+                    self.log_file.write("\n" + "="*50 + "\n")
+                    self.log_file.write(f"服务器关闭时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    self.log_file.write("=== 服务器关闭 ===")
+                    self.log_file.close()
+                except:
+                    pass
+            
+            self.root.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()

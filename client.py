@@ -198,13 +198,23 @@ class ChatClient:
     def connect_to_server(self, server_ip):
         """连接到指定服务器"""
         connect_start = time.time()
-        self.add_message("系统", f"正在连接到 {server_ip}:{self.server_port}...", 'system')
+        self.add_message("系统", f"========== 连接开始 ==========", 'system')
+        self.add_message("系统", f"目标服务器: {server_ip}:{self.server_port}", 'system')
+        self.add_message("系统", f"本地用户名: {self.client_name}", 'system')
         
         try:
+            # 创建socket
+            socket_start = time.time()
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            socket_elapsed = (time.time() - socket_start) * 1000
+            self.add_message("系统", f"Socket创建成功 (耗时: {socket_elapsed:.2f}ms)", 'system')
+            
+            # 设置选项
+            self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.client_socket.settimeout(5)  # 设置连接超时
             
             # 连接服务器
+            self.add_message("系统", "正在尝试TCP连接...", 'system')
             connect_start_inner = time.time()
             self.client_socket.connect((server_ip, self.server_port))
             connect_elapsed = (time.time() - connect_start_inner) * 1000
@@ -213,6 +223,7 @@ class ChatClient:
             self.client_socket.settimeout(None)  # 移除超时
             
             # 发送用户名
+            self.add_message("系统", "正在发送用户名...", 'system')
             send_start = time.time()
             self.client_socket.send(self.client_name.encode('utf-8'))
             send_elapsed = (time.time() - send_start) * 1000
@@ -228,7 +239,8 @@ class ChatClient:
             self.send_button.config(state='normal')
             
             total_elapsed = (time.time() - connect_start) * 1000
-            self.add_message("系统", f"成功连接到服务器 {server_ip}:{self.server_port} (总耗时: {total_elapsed:.2f}ms)", 'system')
+            self.add_message("系统", f"========== 连接成功 ==========", 'system')
+            self.add_message("系统", f"总耗时: {total_elapsed:.2f}ms", 'system')
             
             # 启动接收消息的线程
             receive_thread = threading.Thread(target=self.receive_messages, daemon=True)
@@ -238,15 +250,49 @@ class ChatClient:
             
         except socket.timeout:
             elapsed = (time.time() - connect_start) * 1000
-            self.add_message("错误", f"连接服务器超时 ({elapsed:.2f}ms)", 'error')
+            self.add_message("错误", "========== 连接失败 ==========", 'error')
+            self.add_message("错误", f"错误类型: 连接超时", 'error')
+            self.add_message("错误", f"可能原因: 服务器无响应、网络延迟过高、防火墙阻止", 'error')
+            self.add_message("错误", f"目标地址: {server_ip}:{self.server_port}", 'error')
+            self.add_message("错误", f"超时时间: 5000ms", 'error')
+            self.add_message("错误", f"总耗时: {elapsed:.2f}ms", 'error')
             return False
         except ConnectionRefusedError:
             elapsed = (time.time() - connect_start) * 1000
-            self.add_message("错误", f"连接被拒绝 - 服务器可能未启动 ({elapsed:.2f}ms)", 'error')
+            self.add_message("错误", "========== 连接失败 ==========", 'error')
+            self.add_message("错误", f"错误类型: 连接被拒绝", 'error')
+            self.add_message("错误", f"可能原因: 服务器未启动、端口未开放、服务器IP/端口配置错误", 'error')
+            self.add_message("错误", f"目标地址: {server_ip}:{self.server_port}", 'error')
+            self.add_message("错误", f"建议: 检查服务端是否运行，确认端口号是否正确", 'error')
+            self.add_message("错误", f"总耗时: {elapsed:.2f}ms", 'error')
+            return False
+        except socket.gaierror as e:
+            elapsed = (time.time() - connect_start) * 1000
+            self.add_message("错误", "========== 连接失败 ==========", 'error')
+            self.add_message("错误", f"错误类型: 域名解析失败", 'error')
+            self.add_message("错误", f"详细信息: {str(e)}", 'error')
+            self.add_message("错误", f"可能原因: 服务器地址格式错误、DNS解析失败", 'error')
+            self.add_message("错误", f"目标地址: {server_ip}:{self.server_port}", 'error')
+            self.add_message("错误", f"建议: 确认服务器IP地址是否正确", 'error')
+            self.add_message("错误", f"总耗时: {elapsed:.2f}ms", 'error')
+            return False
+        except OSError as e:
+            elapsed = (time.time() - connect_start) * 1000
+            self.add_message("错误", "========== 连接失败 ==========", 'error')
+            self.add_message("错误", f"错误类型: 系统网络错误", 'error')
+            self.add_message("错误", f"错误码: {e.errno}", 'error')
+            self.add_message("错误", f"详细信息: {str(e)}", 'error')
+            self.add_message("错误", f"可能原因: 本地网络问题、权限不足、端口占用", 'error')
+            self.add_message("错误", f"目标地址: {server_ip}:{self.server_port}", 'error')
+            self.add_message("错误", f"总耗时: {elapsed:.2f}ms", 'error')
             return False
         except Exception as e:
             elapsed = (time.time() - connect_start) * 1000
-            self.add_message("错误", f"连接服务器失败：{str(e)} ({elapsed:.2f}ms)", 'error')
+            self.add_message("错误", "========== 连接失败 ==========", 'error')
+            self.add_message("错误", f"错误类型: 未知错误", 'error')
+            self.add_message("错误", f"详细信息: {type(e).__name__}: {str(e)}", 'error')
+            self.add_message("错误", f"目标地址: {server_ip}:{self.server_port}", 'error')
+            self.add_message("错误", f"总耗时: {elapsed:.2f}ms", 'error')
             return False
     
     def search_and_connect(self):
