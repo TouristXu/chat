@@ -1,0 +1,43 @@
+=== 服务器启动日志 ===
+启动时间: 2026-06-25 11:16:44
+监听端口: 8888
+==================================================
+
+[2026-06-25 11:16:44] [SYSTEM] 系统: 日志文件已创建：chat_log_20260625_111644.txt
+[2026-06-25 11:16:44] [SYSTEM] 系统: 服务器启动成功，监听端口 8888
+[2026-06-25 11:16:44] [SYSTEM] 系统: 可用连接地址：172.29.5.223:8888
+[2026-06-25 11:18:42] [SYSTEM] 系统: 新连接来自 ('172.29.5.223', 57426)
+[2026-06-25 11:18:42] [SYSTEM] 系统: GET /chat HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: Upgrade
+Pragma: no-cache
+Cache-Control: no-cache
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Upgrade: websocket
+Origin: http://172.29.5.223:8080
+Sec-WebSocket-Version: 13
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+Sec-WebSocket-Key: zXZ5tCCJWLWSAgJiUc1XrQ==
+Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+
+ (('172.29.5.223', 57426)) 加入聊天
+[2026-06-25 11:18:42] [SYSTEM] 系统: GET /chat HTTP/1.1
+Host: 172.29.5.223:8888
+Connection: Upgrade
+Pragma: no-cache
+Cache-Control: no-cache
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0
+Upgrade: websocket
+Origin: http://172.29.5.223:8080
+Sec-WebSocket-Version: 13
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+Sec-WebSocket-Key: zXZ5tCCJWLWSAgJiUc1XrQ==
+Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+
+ 离开聊天
+
+==================================================
+服务器关闭时间: 2026-06-25 11:18:52
+=== 服务器关闭 ===

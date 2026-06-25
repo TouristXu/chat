@@ -1,18 +1,17 @@
 import socket
 import threading
-import json
 import time
-from datetime import datetime
+import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
+import hashlib
+import base64
 
-# 聊天服务器配置
-CHAT_SERVER_HOST = '127.0.0.1'  # 使用本地回环地址连接聊天服务器
+CHAT_SERVER_HOST = '127.0.0.1'
 CHAT_SERVER_PORT = 8888
 WEB_SERVER_PORT = 8080
 
 def get_local_ip():
-    """获取本地IP地址"""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -22,23 +21,17 @@ def get_local_ip():
     except:
         return '127.0.0.1'
 
-# 存储Web客户端
-web_clients = {}  # {client_socket: client_info}
-
 class ChatWebSocketHandler:
-    """处理WebSocket协议"""
     GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     
     def __init__(self, client_socket):
         self.client_socket = client_socket
         self.client_address = client_socket.getpeername()
         self.handshake_done = False
-        self.buffer = ""
         self.username = f"Web用户_{int(time.time() % 10000)}"
         print(f"[WebSocket] 新建连接: {self.client_address}")
     
     def handle_handshake(self, data):
-        """处理WebSocket握手"""
         print(f"[WebSocket] 开始握手 - 客户端: {self.client_address}")
         print(f"[WebSocket] 接收到数据长度: {len(data)} bytes")
         
@@ -52,7 +45,6 @@ class ChatWebSocketHandler:
                     key, value = line.split(':', 1)
                     headers[key.strip()] = value.strip()
             
-            # 打印关键头部
             print(f"[WebSocket] Host: {headers.get('Host', '未知')}")
             print(f"[WebSocket] Upgrade: {headers.get('Upgrade', '未知')}")
             print(f"[WebSocket] Connection: {headers.get('Connection', '未知')}")
@@ -61,8 +53,6 @@ class ChatWebSocketHandler:
             
             if 'Upgrade' in headers and headers['Upgrade'].lower() == 'websocket':
                 sec_key = headers.get('Sec-WebSocket-Key', '')
-                import hashlib
-                import base64
                 accept_key = base64.b64encode(hashlib.sha1((sec_key + self.GUID).encode()).digest()).decode()
                 
                 print(f"[WebSocket] 生成Accept Key: {accept_key}")
@@ -89,7 +79,6 @@ class ChatWebSocketHandler:
             return False
     
     def parse_frame(self, data):
-        """解析WebSocket帧"""
         if len(data) < 2:
             print(f"[WebSocket] 帧数据不足: {len(data)} bytes")
             return None
@@ -100,6 +89,10 @@ class ChatWebSocketHandler:
         payload_len = data[1] & 0x7F
         
         print(f"[WebSocket] 帧解析 - FIN: {fin}, Opcode: {opcode}, Mask: {mask}, PayloadLen: {payload_len}")
+        
+        if opcode == 8:
+            print(f"[WebSocket] 收到关闭帧")
+            return None
         
         index = 2
         if payload_len == 126:
@@ -124,14 +117,13 @@ class ChatWebSocketHandler:
         return message
     
     def send_frame(self, message):
-        """发送WebSocket帧"""
         print(f"[WebSocket] 准备发送消息: {message[:50]}..." if len(message) > 50 else f"[WebSocket] 准备发送消息: {message}")
         
         payload = message.encode('utf-8')
         payload_len = len(payload)
         
         frame = bytearray()
-        frame.append(0x81)  # FIN + TEXT
+        frame.append(0x81)
         
         if payload_len < 126:
             frame.append(payload_len)
@@ -153,7 +145,6 @@ class ChatWebSocketHandler:
             return False
 
 class ChatClient:
-    """连接到聊天服务器的客户端"""
     def __init__(self, web_handler):
         self.web_handler = web_handler
         self.chat_socket = None
@@ -161,30 +152,25 @@ class ChatClient:
         print(f"[ChatClient] 新建实例 - 用户名: {web_handler.username}")
     
     def connect_to_chat_server(self):
-        """连接到聊天服务器"""
         print(f"[ChatClient] 开始连接聊天服务器 - {CHAT_SERVER_HOST}:{CHAT_SERVER_PORT}")
         
         try:
-            # 创建socket
             self.chat_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.chat_socket.settimeout(5)  # 设置超时
+            self.chat_socket.settimeout(5)
             print(f"[ChatClient] Socket创建成功")
             
-            # 连接到聊天服务器
             start_time = time.time()
             self.chat_socket.connect((CHAT_SERVER_HOST, CHAT_SERVER_PORT))
             connect_time = (time.time() - start_time) * 1000
             print(f"[ChatClient] 连接成功 - 耗时: {connect_time:.2f}ms")
             
-            self.chat_socket.settimeout(None)  # 移除超时
+            self.chat_socket.settimeout(None)
             
-            # 发送用户名
             send_len = self.chat_socket.send(self.web_handler.username.encode('utf-8'))
             print(f"[ChatClient] 用户名发送成功: {self.web_handler.username} ({send_len} bytes)")
             
             self.running = True
             
-            # 启动接收消息线程
             receive_thread = threading.Thread(target=self.receive_messages, daemon=True)
             receive_thread.start()
             print(f"[ChatClient] 消息接收线程已启动")
@@ -195,7 +181,7 @@ class ChatClient:
             print(f"[ChatClient] 连接超时 - {CHAT_SERVER_HOST}:{CHAT_SERVER_PORT}")
             return False
         except ConnectionRefusedError:
-            print(f"[ChatClient] 连接被拒绝 - {CHAT_SERVER_HOST}:{CHAT_SERVER_PORT} (聊天服务器可能未启动)")
+            print(f"[ChatClient] 连接被拒绝 - {CHAT_SERVER_HOST}:{CHAT_SERVER_PORT}")
             return False
         except OSError as e:
             print(f"[ChatClient] 网络错误 - {e.errno}: {str(e)}")
@@ -205,7 +191,6 @@ class ChatClient:
             return False
     
     def receive_messages(self):
-        """接收聊天服务器消息"""
         print(f"[ChatClient] 开始接收消息循环")
         
         while self.running:
@@ -219,12 +204,11 @@ class ChatClient:
                         print(f"[ChatClient] JSON消息: {message_dict}")
                         self.web_handler.send_frame(json.dumps(message_dict))
                     except json.JSONDecodeError:
-                        # 处理纯文本消息
                         text_message = data.decode('utf-8')
                         print(f"[ChatClient] 纯文本消息: {text_message[:50]}...")
                         self.web_handler.send_frame(text_message)
                 else:
-                    print(f"[ChatClient] 连接已断开 (空数据)")
+                    print(f"[ChatClient] 连接已断开")
                     break
             except socket.timeout:
                 continue
@@ -243,7 +227,6 @@ class ChatClient:
                 pass
     
     def send_message(self, message):
-        """发送消息到聊天服务器"""
         if self.chat_socket and self.running:
             try:
                 self.chat_socket.send(message.encode('utf-8'))
@@ -252,36 +235,7 @@ class ChatClient:
                 return False
         return False
 
-class WebChatHandler(BaseHTTPRequestHandler):
-    """处理HTTP请求"""
-    
-    def do_GET(self):
-        """处理GET请求"""
-        parsed = urlparse(self.path)
-        path = parsed.path
-        
-        if path == '/':
-            self.serve_index()
-        elif path == '/chat':
-            self.handle_websocket()
-        elif path == '/api/message':
-            self.handle_api_message()
-        else:
-            self.send_error(404, "Not Found")
-    
-    def do_POST(self):
-        """处理POST请求"""
-        parsed = urlparse(self.path)
-        path = parsed.path
-        
-        if path == '/api/send':
-            self.handle_api_send()
-        else:
-            self.send_error(404, "Not Found")
-    
-    def serve_index(self):
-        """返回聊天页面"""
-        html_content = """
+HTML_CONTENT = """
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -300,116 +254,18 @@ class WebChatHandler(BaseHTTPRequestHandler):
         .chat-container {
             background: white;
             border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             overflow: hidden;
         }
         .chat-header {
+            padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
             text-align: center;
         }
         .chat-header h1 {
             margin: 0;
             font-size: 24px;
-        }
-        .chat-messages {
-            height: 400px;
-            overflow-y: auto;
-            padding: 20px;
-            background: #f8f9fa;
-        }
-        .message {
-            margin-bottom: 15px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            max-width: 70%;
-            word-wrap: break-word;
-        }
-        .message-self {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            margin-left: auto;
-        }
-        .message-client {
-            background: #e9ecef;
-            color: #333;
-        }
-        .message-server {
-            background: #fff3cd;
-            color: #856404;
-            text-align: center;
-            max-width: 100%;
-        }
-        .message-system {
-            background: #d4edda;
-            color: #155724;
-            text-align: center;
-            max-width: 100%;
-            font-size: 14px;
-        }
-        .message-sender {
-            font-weight: 600;
-            margin-bottom: 4px;
-            font-size: 14px;
-        }
-        .message-content {
-            font-size: 15px;
-            line-height: 1.4;
-        }
-        .message-time {
-            font-size: 12px;
-            opacity: 0.7;
-            margin-top: 4px;
-        }
-        .chat-input {
-            padding: 20px;
-            border-top: 1px solid #eee;
-            display: flex;
-            gap: 10px;
-        }
-        .chat-input input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            font-size: 16px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        .chat-input input:focus {
-            border-color: #667eea;
-        }
-        .chat-input button {
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .chat-input button:hover {
-            transform: translateY(-2px);
-        }
-        .chat-input button:active {
-            transform: translateY(0);
-        }
-        .status-bar {
-            padding: 10px 20px;
-            background: #f8f9fa;
-            border-top: 1px solid #eee;
-            font-size: 14px;
-            color: #666;
-            display: flex;
-            justify-content: space-between;
-        }
-        .status-online {
-            color: #28a745;
-        }
-        .status-offline {
-            color: #dc3545;
         }
         .username-section {
             padding: 15px 20px;
@@ -436,6 +292,133 @@ class WebChatHandler(BaseHTTPRequestHandler):
             border-radius: 8px;
             cursor: pointer;
         }
+        .server-config {
+            padding: 12px 20px;
+            background: #e9ecef;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .server-config label {
+            font-weight: 500;
+            color: #495057;
+        }
+        .server-config input {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 120px;
+        }
+        .server-config button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .server-config button:first-of-type {
+            background: #28a745;
+            color: white;
+        }
+        .server-config button:first-of-type:hover {
+            background: #218838;
+        }
+        .server-config button:last-of-type {
+            background: #dc3545;
+            color: white;
+        }
+        .server-config button:last-of-type:hover {
+            background: #c82333;
+        }
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+        }
+        .message-content {
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .message-self {
+            text-align: right;
+        }
+        .message-self .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 12px;
+            display: inline-block;
+        }
+        .message-other {
+            text-align: left;
+        }
+        .message-other .message-content {
+            background: #f1f3f4;
+            color: #333;
+            border-radius: 12px 12px 12px 0;
+            display: inline-block;
+        }
+        .message-system {
+            text-align: center;
+        }
+        .message-system .message-content {
+            background: #e3f2fd;
+            color: #1976d2;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        .chat-input {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+        }
+        .chat-input button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .chat-input button:hover {
+            transform: translateY(-2px);
+        }
+        .status-bar {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+        .status-online {
+            color: #28a745;
+        }
+        .status-offline {
+            color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -450,12 +433,21 @@ class WebChatHandler(BaseHTTPRequestHandler):
             <button onclick="setUsername()">设置</button>
         </div>
         
+        <div class="server-config">
+            <label>服务器地址:</label>
+            <input type="text" id="serverHost" placeholder="输入服务器IP" value="127.0.0.1">
+            <label>端口:</label>
+            <input type="text" id="serverPort" placeholder="输入端口" value="8080">
+            <button onclick="connect()">连接</button>
+            <button onclick="disconnect()">断开</button>
+        </div>
+        
         <div class="chat-messages" id="chatMessages">
             <div class="message message-system">
                 <div class="message-content">欢迎来到网页聊天室！</div>
             </div>
             <div class="message message-system">
-                <div class="message-content">正在连接到服务器...</div>
+                <div class="message-content">请输入服务器地址并点击连接按钮</div>
             </div>
         </div>
         
@@ -479,22 +471,24 @@ class WebChatHandler(BaseHTTPRequestHandler):
             const newName = input.value.trim();
             if (newName) {
                 username = newName;
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    // 发送新用户名（需要服务器支持）
-                }
+                addMessage('系统', `用户名已更改为: ${username}`, 'system');
             }
         }
         
         function connect() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const host = window.location.hostname || 'localhost';
-            const webServerPort = '8080';  // 网页服务器固定端口
+            const host = document.getElementById('serverHost').value.trim() || '127.0.0.1';
+            const port = document.getElementById('serverPort').value.trim() || '8080';
             
-            const wsUrl = `${protocol}//${host}:${webServerPort}/chat`;
+            const wsUrl = `${protocol}//${host}:${port}/chat`;
             console.log(`[WebSocket] 尝试连接: ${wsUrl}`);
             
-            addMessage('系统', `正在连接到网页服务器: ${host}:${webServerPort}...`, 'system');
+            addMessage('系统', `正在连接到服务器: ${host}:${port}...`, 'system');
             addMessage('系统', `WebSocket端点: ${wsUrl}`, 'system');
+            
+            if (ws) {
+                ws.close();
+            }
             
             ws = new WebSocket(wsUrl);
             
@@ -505,7 +499,15 @@ class WebChatHandler(BaseHTTPRequestHandler):
                 document.getElementById('connectionInfo').textContent = `已连接到 ${host}:${port}`;
                 
                 addMessage('系统', 'WebSocket连接成功！', 'system');
-                addMessage('系统', '正在连接到聊天服务器...', 'system');
+                addMessage('系统', '正在发送用户名...', 'system');
+                
+                setTimeout(function() {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(username);
+                        console.log(`[WebSocket] 发送用户名: ${username}`);
+                        addMessage('系统', `已发送用户名: ${username}`, 'system');
+                    }
+                }, 100);
             };
             
             ws.onmessage = function(event) {
@@ -513,15 +515,16 @@ class WebChatHandler(BaseHTTPRequestHandler):
                 try {
                     const data = JSON.parse(event.data);
                     console.log('[WebSocket] JSON消息:', data);
-                    if (data.type === 'client' || data.type === 'server') {
-                        addMessage(data.name, data.message, data.type);
+                    if (data.type === 'client') {
+                        addMessage(data.name, data.message, 'other');
+                    } else if (data.type === 'server') {
+                        addMessage(data.name, data.message, 'other');
                     } else if (data.type === 'system') {
                         addMessage('系统', data.message, 'system');
                     }
                 } catch (e) {
-                    // 处理纯文本消息
                     console.log(`[WebSocket] 纯文本消息: ${event.data}`);
-                    addMessage('服务器', event.data, 'server');
+                    addMessage('服务器', event.data, 'other');
                 }
             };
             
@@ -545,166 +548,141 @@ class WebChatHandler(BaseHTTPRequestHandler):
                     reason = '异常断开';
                 }
                 addMessage('系统', `连接已断开: ${reason}`, 'system');
-                
-                // 尝试重新连接
-                addMessage('系统', '3秒后尝试重新连接...', 'system');
-                setTimeout(connect, 3000);
             };
         }
         
-        function addMessage(sender, message, type) {
-            const container = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            
-            let messageClass = 'message-client';
-            if (sender === username) {
-                messageClass = 'message-self';
-            } else if (sender === '服务器') {
-                messageClass = 'message-server';
-            } else if (type === 'system') {
-                messageClass = 'message-system';
-            }
-            
-            messageDiv.className = 'message ' + messageClass;
-            
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            
-            if (type === 'system') {
-                messageDiv.innerHTML = `<div class="message-content">${escapeHtml(message)}</div>`;
+        function disconnect() {
+            if (ws) {
+                console.log('[WebSocket] 手动断开连接');
+                addMessage('系统', '正在断开连接...', 'system');
+                ws.close(1000, '手动断开');
+                ws = null;
             } else {
-                messageDiv.innerHTML = `
-                    <div class="message-sender">${escapeHtml(sender)}</div>
-                    <div class="message-content">${escapeHtml(message)}</div>
-                    <div class="message-time">${timeStr}</div>
-                `;
+                addMessage('系统', '当前没有连接', 'system');
             }
-            
-            container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
         }
         
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
             
-            if (message && ws && ws.readyState === WebSocket.OPEN) {
+            if (!message) return;
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(message);
-                addMessage(username, message, 'self');
+                addMessage('我', message, 'self');
                 input.value = '';
+            } else {
+                addMessage('系统', '请先连接到服务器', 'system');
             }
         }
         
         function handleKeyPress(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
+            if (event.key === 'Enter') {
                 sendMessage();
             }
         }
         
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        function addMessage(sender, message, type) {
+            const container = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${type}`;
+            
+            let content = '';
+            if (type === 'system') {
+                content = `<div class="message-content">${message}</div>`;
+            } else {
+                content = `<div class="message-content"><strong>${sender}:</strong> ${message}</div>`;
+            }
+            
+            messageDiv.innerHTML = content;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
         }
-        
-        // 页面加载完成后连接
-        document.addEventListener('DOMContentLoaded', connect);
     </script>
 </body>
 </html>
-            """
-        self.send_response(200)
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
-        self.send_header('Content-Length', len(html_content.encode()))
+"""
+
+class WebRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        
+        if path == '/':
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', len(HTML_CONTENT.encode()))
+            self.end_headers()
+            self.wfile.write(HTML_CONTENT.encode())
+        elif path == '/chat':
+            self.handle_websocket()
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def do_POST(self):
+        self.send_response(404)
         self.end_headers()
-        self.wfile.write(html_content.encode())
     
     def handle_websocket(self):
-        """处理WebSocket连接"""
-        # 获取客户端socket
         client_socket = self.connection
         
-        # 包装为WebSocket处理器
         ws_handler = ChatWebSocketHandler(client_socket)
         
-        # 读取握手数据
         try:
             data = client_socket.recv(4096)
             if ws_handler.handle_handshake(data):
-                # 创建聊天客户端
-                chat_client = ChatClient(ws_handler)
-                if chat_client.connect_to_chat_server():
-                    print(f"[WebSocket] Web客户端已连接到聊天服务器")
-                    ws_handler.send_frame(json.dumps({'type': 'system', 'message': '已连接到聊天服务器'}))
-                    
-                    # 处理消息循环
-                    while ws_handler.handshake_done:
-                        try:
-                            data = client_socket.recv(1024)
-                            if not data:
-                                print(f"[WebSocket] 客户端断开连接")
-                                break
-                            
-                            message = ws_handler.parse_frame(data)
-                            if message:
-                                chat_client.send_message(message)
-                        except Exception as e:
-                            print(f"[WebSocket] 消息循环异常: {type(e).__name__}: {str(e)}")
+                print(f"[WebSocket] 握手成功，等待用户名...")
+                ws_handler.send_frame(json.dumps({'type': 'system', 'message': '请输入用户名'}))
+                
+                chat_client = None
+                
+                while ws_handler.handshake_done:
+                    try:
+                        data = client_socket.recv(1024)
+                        if not data:
+                            print(f"[WebSocket] 客户端断开连接")
                             break
-                else:
-                    # 无法连接到聊天服务器
-                    print(f"[WebSocket] 无法连接到聊天服务器")
-                    ws_handler.send_frame(json.dumps({'type': 'system', 'message': '无法连接到聊天服务器，请确保聊天服务器已启动'}))
-                    # 延迟关闭连接
-                    time.sleep(1)
+                        
+                        message = ws_handler.parse_frame(data)
+                        if message:
+                            if not chat_client:
+                                ws_handler.username = message
+                                print(f"[WebSocket] 收到用户名: {ws_handler.username}")
+                                ws_handler.send_frame(json.dumps({'type': 'system', 'message': f'用户名已设置: {ws_handler.username}'}))
+                                
+                                print(f"[WebSocket] 正在连接到聊天服务器...")
+                                chat_client = ChatClient(ws_handler)
+                                if chat_client.connect_to_chat_server():
+                                    print(f"[WebSocket] Web客户端已连接到聊天服务器")
+                                    ws_handler.send_frame(json.dumps({'type': 'system', 'message': '已连接到聊天服务器'}))
+                                else:
+                                    print(f"[WebSocket] 无法连接到聊天服务器")
+                                    ws_handler.send_frame(json.dumps({'type': 'system', 'message': '无法连接到聊天服务器，请确保聊天服务器已启动'}))
+                                    time.sleep(2)
+                                    break
+                            else:
+                                chat_client.send_message(message)
+                    except Exception as e:
+                        print(f"[WebSocket] 消息循环异常: {type(e).__name__}: {str(e)}")
+                        break
             else:
                 print(f"[WebSocket] 握手失败")
-                self.send_error(400, "Bad Request")
         except Exception as e:
             print(f"[WebSocket] 处理异常: {type(e).__name__}: {str(e)}")
     
-    def handle_api_message(self):
-        """处理API消息请求"""
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.end_headers()
-        response = json.dumps({'status': 'ok', 'message': 'WebSocket连接已建立'})
-        self.wfile.write(response.encode())
-    
-    def handle_api_send(self):
-        """处理API发送消息"""
-        try:
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length).decode('utf-8')
-            data = parse_qs(post_data)
-            
-            message = data.get('message', [''])[0]
-            username = data.get('username', ['Web用户'])[0]
-            
-            # 发送到聊天服务器
-            chat_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            chat_socket.connect((CHAT_SERVER_HOST, CHAT_SERVER_PORT))
-            chat_socket.send(username.encode('utf-8'))
-            time.sleep(0.1)
-            chat_socket.send(message.encode('utf-8'))
-            chat_socket.close()
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'status': 'ok'}).encode())
-        except Exception as e:
-            self.send_error(500, str(e))
-    
     def log_message(self, format, *args):
-        """禁用日志输出"""
         pass
 
 def start_web_server():
-    """启动Web服务器"""
+    from socketserver import ThreadingMixIn
+    
+    class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+        pass
+    
     server_address = ('0.0.0.0', WEB_SERVER_PORT)
-    httpd = HTTPServer(server_address, WebChatHandler)
+    httpd = ThreadedHTTPServer(server_address, WebRequestHandler)
     
     local_ip = get_local_ip()
     
@@ -716,7 +694,7 @@ def start_web_server():
     print(f"局域网地址: http://{local_ip}:{WEB_SERVER_PORT}")
     print(f"聊天服务器地址: {CHAT_SERVER_HOST}:{CHAT_SERVER_PORT}")
     print("="*60)
-    print("WebSocket端点: ws://localhost:{WEB_SERVER_PORT}/chat")
+    print("WebSocket端点: ws://localhost:8080/chat")
     print("日志输出已启用，可查看连接状态")
     print("="*60)
     

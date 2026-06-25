@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>局域网聊天室</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .chat-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .chat-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        .chat-header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .username-section {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .username-section label {
+            font-weight: 500;
+        }
+        .username-section input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .username-section button {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .server-config {
+            padding: 12px 20px;
+            background: #e9ecef;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .server-config label {
+            font-weight: 500;
+            color: #495057;
+        }
+        .server-config input {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 120px;
+        }
+        .server-config button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .server-config button:first-of-type {
+            background: #28a745;
+            color: white;
+        }
+        .server-config button:first-of-type:hover {
+            background: #218838;
+        }
+        .server-config button:last-of-type {
+            background: #dc3545;
+            color: white;
+        }
+        .server-config button:last-of-type:hover {
+            background: #c82333;
+        }
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+        }
+        .message-content {
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .message-self {
+            text-align: right;
+        }
+        .message-self .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 12px;
+            display: inline-block;
+        }
+        .message-other {
+            text-align: left;
+        }
+        .message-other .message-content {
+            background: #f1f3f4;
+            color: #333;
+            border-radius: 12px 12px 12px 0;
+            display: inline-block;
+        }
+        .message-system {
+            text-align: center;
+        }
+        .message-system .message-content {
+            background: #e3f2fd;
+            color: #1976d2;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        .chat-input {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+        }
+        .chat-input button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .chat-input button:hover {
+            transform: translateY(-2px);
+        }
+        .status-bar {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+        .status-online {
+            color: #28a745;
+        }
+        .status-offline {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🌐 局域网聊天室</h1>
+        </div>
+        
+        <div class="username-section">
+            <label>您的昵称:</label>
+            <input type="text" id="usernameInput" placeholder="输入昵称" value="Web用户">
+            <button onclick="setUsername()">设置</button>
+        </div>
+        
+        <div class="server-config">
+            <label>服务器地址:</label>
+            <input type="text" id="serverHost" placeholder="输入服务器IP" value="127.0.0.1">
+            <label>端口:</label>
+            <input type="text" id="serverPort" placeholder="输入端口" value="8888">
+            <button onclick="connect()">连接</button>
+            <button onclick="disconnect()">断开</button>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message message-system">
+                <div class="message-content">欢迎来到局域网聊天室！</div>
+            </div>
+            <div class="message message-system">
+                <div class="message-content">请输入服务器地址并点击连接按钮</div>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="输入消息..." onkeyup="handleKeyPress(event)">
+            <button onclick="sendMessage()">发送</button>
+        </div>
+        
+        <div class="status-bar">
+            <span>状态: <span id="status" class="status-offline">离线</span></span>
+            <span id="connectionInfo">未连接</span>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let username = 'Web用户_' + Math.floor(Math.random() * 10000);
+        
+        function setUsername() {
+            const input = document.getElementById('usernameInput');
+            const newName = input.value.trim();
+            if (newName) {
+                username = newName;
+                addMessage('系统', `用户名已更改为: ${username}`, 'system');
+            }
+        }
+        
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = document.getElementById('serverHost').value.trim() || '127.0.0.1';
+            const port = document.getElementById('serverPort').value.trim() || '8888';
+            
+            const wsUrl = `${protocol}//${host}:${port}`;
+            
+            console.log(`\n========== WebSocket连接开始 ==========`);
+            console.log(`[WebSocket] 浏览器协议: ${window.location.protocol}`);
+            console.log(`[WebSocket] WebSocket协议: ${protocol}`);
+            console.log(`[WebSocket] 服务器地址: ${host}`);
+            console.log(`[WebSocket] 服务器端口: ${port}`);
+            console.log(`[WebSocket] 完整端点: ${wsUrl}`);
+            console.log(`[WebSocket] 时间: ${new Date().toLocaleString()}`);
+            console.log(`========================================`);
+            
+            addMessage('系统', `正在连接到服务器: ${host}:${port}...`, 'system');
+            addMessage('系统', `WebSocket端点: ${wsUrl}`, 'system');
+            addMessage('系统', `时间: ${new Date().toLocaleString()}`, 'system');
+            
+            if (ws) {
+                console.log('[WebSocket] 关闭之前的连接');
+                ws.close();
+            }
+            
+            console.log('[WebSocket] 创建WebSocket实例...');
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                const now = new Date();
+                console.log(`\n========== WebSocket连接成功 ==========`);
+                console.log(`[WebSocket] 连接已建立`);
+                console.log(`[WebSocket] 时间: ${now.toLocaleString()}`);
+                console.log(`[WebSocket] readyState: ${ws.readyState} (OPEN)`);
+                console.log(`[WebSocket] bufferedAmount: ${ws.bufferedAmount}`);
+                console.log(`========================================`);
+                
+                document.getElementById('status').textContent = '在线';
+                document.getElementById('status').className = 'status-online';
+                document.getElementById('connectionInfo').textContent = `已连接到 ${host}:${port}`;
+                
+                addMessage('系统', '🎉 WebSocket连接成功！', 'system');
+                addMessage('系统', `连接时间: ${now.toLocaleString()}`, 'system');
+                addMessage('系统', '正在发送用户名...', 'system');
+                
+                setTimeout(function() {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        console.log(`[WebSocket] 发送用户名: "${username}"`);
+                        ws.send(username);
+                        addMessage('系统', `✅ 已发送用户名: ${username}`, 'system');
+                    } else {
+                        console.log('[WebSocket] 连接已关闭，无法发送用户名');
+                        addMessage('系统', '❌ 连接已关闭，无法发送用户名', 'system');
+                    }
+                }, 100);
+            };
+            
+            ws.onmessage = function(event) {
+                console.log(`[WebSocket] 收到消息 - 长度: ${event.data.length} bytes`);
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('[WebSocket] JSON消息解析成功:', data);
+                    if (data.type === 'client') {
+                        addMessage(data.name, data.message, 'other');
+                    } else if (data.type === 'server') {
+                        addMessage(data.name, data.message, 'other');
+                    } else if (data.type === 'system') {
+                        addMessage('系统', data.message, 'system');
+                    }
+                } catch (e) {
+                    console.log(`[WebSocket] 纯文本消息: "${event.data}"`);
+                    addMessage('服务器', event.data, 'other');
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error(`\n========== WebSocket错误 ==========`);
+                console.error(`[WebSocket] 错误类型: ${error.type || 'unknown'}`);
+                console.error(`[WebSocket] 错误时间: ${new Date().toLocaleString()}`);
+                console.error(`[WebSocket] 错误详情:`, error);
+                console.error(`====================================`);
+                
+                document.getElementById('status').textContent = '错误';
+                document.getElementById('status').className = 'status-offline';
+                addMessage('系统', `❌ 连接错误: ${error.type || '未知错误'}`, 'system');
+                addMessage('系统', `错误时间: ${new Date().toLocaleString()}`, 'system');
+                addMessage('系统', `请检查: 1.服务器是否运行 2.IP和端口是否正确 3.防火墙是否允许`, 'system');
+            };
+            
+            ws.onclose = function(event) {
+                console.log(`\n========== WebSocket关闭 ==========`);
+                console.log(`[WebSocket] 关闭代码: ${event.code}`);
+                console.log(`[WebSocket] 关闭原因: ${event.reason || '无'}`);
+                console.log(`[WebSocket] 是否正常关闭: ${event.wasClean}`);
+                console.log(`[WebSocket] 关闭时间: ${new Date().toLocaleString()}`);
+                
+                let reason = '未知原因';
+                if (event.code === 1000) {
+                    reason = '正常关闭';
+                } else if (event.code === 1006) {
+                    reason = '异常断开';
+                }
+                console.log(`[WebSocket] 关闭描述: ${reason}`);
+                console.log(`====================================`);
+                
+                document.getElementById('status').textContent = '离线';
+                document.getElementById('status').className = 'status-offline';
+                document.getElementById('connectionInfo').textContent = `连接已断开 (${event.code})`;
+                
+                addMessage('系统', `🔌 连接已断开: ${reason}`, 'system');
+                addMessage('系统', `关闭代码: ${event.code}`, 'system');
+            };
+        }
+        
+        function disconnect() {
+            if (ws) {
+                console.log('[WebSocket] 手动断开连接');
+                addMessage('系统', '正在断开连接...', 'system');
+                ws.close(1000, '手动断开');
+                ws = null;
+            } else {
+                addMessage('系统', '当前没有连接', 'system');
+            }
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(message);
+                addMessage('我', message, 'self');
+                input.value = '';
+            } else {
+                addMessage('系统', '请先连接到服务器', 'system');
+            }
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        function addMessage(sender, message, type) {
+            const container = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${type}`;
+            
+            let content = '';
+            if (type === 'system') {
+                content = `<div class="message-content">${message}</div>`;
+            } else {
+                content = `<div class="message-content"><strong>${sender}:</strong> ${message}</div>`;
+            }
+            
+            messageDiv.innerHTML = content;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+</body>
+</html>

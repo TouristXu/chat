@@ -1,0 +1,39 @@
+=== 服务器启动日志 ===
+启动时间: 2026-06-25 14:08:28
+监听端口: 8888
+==================================================
+
+[2026-06-25 14:08:28] [SYSTEM] 系统: 日志文件已创建：chat_log_20260625_140828.txt
+[2026-06-25 14:08:28] [SYSTEM] 系统: 服务器启动成功，监听端口 8888
+[2026-06-25 14:08:28] [SYSTEM] 系统: 可用连接地址：172.29.5.223:8888
+[2026-06-25 14:08:48] [SYSTEM] 系统: 新连接来自 ('127.0.0.1', 59894)
+[2026-06-25 14:08:48] [SYSTEM] 系统: TCP客户端 GET / HTTP/1.1
+Host: 127.0.0.1:8888
+Connection: Upgrade
+Pragma: no-cache
+Cache-Control: no-cache
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-CN
+Origin: http://localhost:8000
+Sec-WebSocket-Version: 13
+Upgrade: websocket
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) TraeCN/1.107.1 Chrome/142.0.7444.235 Electron/39.2.7 Safari/537.36
+Sec-WebSocket-Key: lQ4JkEjzcltZK7VlmafYcw==
+Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+
+ (('127.0.0.1', 59894)) 加入聊天
+[2026-06-25 14:08:48] [SYSTEM] 系统: GET / HTTP/1.1
+Host: 127.0.0.1:8888
+Connection: Upgrade
+Pragma: no-cache
+Cache-Control: no-cache
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-CN
+Origin: http://localhost:8000
+Sec-WebSocket-Version: 13
+Upgrade: websocket
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) TraeCN/1.107.1 Chrome/142.0.7444.235 Electron/39.2.7 Safari/537.36
+Sec-WebSocket-Key: lQ4JkEjzcltZK7VlmafYcw==
+Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+
+ 离开聊天

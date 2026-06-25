@@ -5,6 +5,8 @@ from tkinter import ttk, scrolledtext, messagebox
 import json
 from datetime import datetime
 import os
+import hashlib
+import base64
 
 class ChatServer:
     def __init__(self, root):
@@ -18,7 +20,11 @@ class ChatServer:
         self.server_socket = None
         self.clients = {}  # {client_socket: client_address}
         self.client_names = {}  # {client_socket: client_name}
+        self.client_types = {}  # {client_socket: 'tcp' or 'websocket'}
         self.running = False
+        
+        # WebSocket配置
+        self.websocket_guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
         
         # 日志配置
         self.log_file = None
@@ -256,55 +262,255 @@ class ChatServer:
     def handle_client(self, client_socket, client_address):
         """处理客户端消息"""
         try:
-            # 接收客户端名称
-            name_data = client_socket.recv(1024).decode('utf-8')
-            if name_data:
+            print(f"\n{'='*60}")
+            print(f"[客户端连接] 新连接来自: {client_address}")
+            print(f"[客户端连接] 时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"{'='*60}")
+            
+            # 检测连接类型（TCP或WebSocket）
+            first_data = client_socket.recv(4096)
+            if not first_data:
+                print(f"[客户端连接] 空数据，连接关闭")
+                return
+            
+            print(f"[连接检测] 接收到初始数据: {len(first_data)} bytes")
+            print(f"[连接检测] 数据前100字节: {first_data[:100]}")
+            
+            is_websocket = self.is_websocket_request(first_data)
+            
+            if is_websocket:
+                print(f"[连接检测] 检测到WebSocket连接请求")
+                
+                # WebSocket握手
+                if not self.websocket_handshake(client_socket, first_data):
+                    print(f"[WebSocket] 握手失败")
+                    client_socket.close()
+                    return
+                
+                print(f"[WebSocket] 握手成功")
+                
+                # 等待WebSocket客户端发送用户名（设置超时）
+                client_socket.settimeout(10.0)
+                print(f"[WebSocket] 等待用户名，超时10秒...")
+                name_data = self.websocket_recv(client_socket)
+                client_socket.settimeout(None)  # 恢复默认超时
+                
+                if not name_data:
+                    print(f"[WebSocket] 未收到用户名或超时")
+                    client_socket.close()
+                    return
+                
                 client_name = name_data
-                self.clients[client_socket] = client_address
-                self.client_names[client_socket] = client_name
-                
-                # 更新客户端列表
-                self.update_client_list()
-                
-                # 通知所有客户端有新用户加入
-                self.broadcast_message({
-                    'type': 'system',
-                    'message': f'{client_name} 加入了聊天'
-                })
-                
-                self.add_message("系统", f"{client_name} ({client_address}) 加入聊天", 'system')
-                
-                # 接收客户端消息
-                while self.running:
-                    try:
+                client_type = 'websocket'
+                print(f"[WebSocket] 用户名: {client_name}")
+                self.add_message("系统", f"WebSocket客户端 {client_name} ({client_address}) 加入聊天", 'system')
+            else:
+                # TCP客户端
+                client_name = first_data.decode('utf-8')
+                client_type = 'tcp'
+                print(f"[连接检测] 检测到TCP连接请求")
+                print(f"[TCP] 用户名: {client_name}")
+                self.add_message("系统", f"TCP客户端 {client_name} ({client_address}) 加入聊天", 'system')
+            
+            # 注册客户端
+            self.clients[client_socket] = client_address
+            self.client_names[client_socket] = client_name
+            self.client_types[client_socket] = client_type
+            
+            print(f"[客户端注册] 客户端类型: {client_type}")
+            print(f"[客户端注册] 当前连接数: {len(self.clients)}")
+            
+            # 更新客户端列表
+            self.update_client_list()
+            
+            # 通知所有客户端有新用户加入
+            self.broadcast_message({
+                'type': 'system',
+                'message': f'{client_name} 加入了聊天'
+            })
+            
+            print(f"[消息广播] 通知所有客户端: {client_name} 加入了聊天")
+            
+            # 接收客户端消息
+            while self.running:
+                try:
+                    if client_type == 'websocket':
+                        data = self.websocket_recv(client_socket)
+                    else:
                         data = client_socket.recv(1024)
-                        if data:
-                            message = data.decode('utf-8')
-                            self.broadcast_message({
-                                'type': 'client',
-                                'name': client_name,
-                                'message': message
-                            })
-                            self.add_message(client_name, message, 'client')
-                        else:
-                            break
-                    except:
+                    
+                    if data:
+                        message = data
+                        self.broadcast_message({
+                            'type': 'client',
+                            'name': client_name,
+                            'message': message
+                        })
+                        self.add_message(client_name, message, 'client')
+                    else:
                         break
-                
-        except Exception as e:
-            self.add_message("错误", f"处理客户端 {client_address} 时出错：{str(e)}", 'error')
-        finally:
+                except Exception as e:
+                    if self.running:
+                        self.add_message("错误", f"接收消息失败：{str(e)}", 'error')
+                    break
+            
+            # 客户端断开
             self.remove_client(client_socket)
+            
+        except Exception as e:
+            if self.running:
+                self.add_message("错误", f"处理客户端失败：{str(e)}", 'error')
+            try:
+                client_socket.close()
+            except:
+                pass
+    
+    def is_websocket_request(self, data):
+        """检测是否为WebSocket请求"""
+        try:
+            data_str = data.decode('utf-8')
+            return 'upgrade: websocket' in data_str.lower()
+        except:
+            return False
+    
+    def websocket_handshake(self, client_socket, data):
+        """WebSocket握手"""
+        try:
+            data_str = data.decode('utf-8')
+            print(f"[WebSocket握手] 开始处理握手请求")
+            print(f"[WebSocket握手] 请求头前200字节:\n{data_str[:200]}")
+            
+            headers = {}
+            for line in data_str.split('\r\n'):
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    headers[key.strip()] = value.strip()
+            
+            if 'Sec-WebSocket-Key' not in headers:
+                print(f"[WebSocket握手] 失败 - 缺少Sec-WebSocket-Key")
+                return False
+            
+            sec_key = headers['Sec-WebSocket-Key']
+            print(f"[WebSocket握手] Sec-WebSocket-Key: {sec_key}")
+            
+            accept_key = base64.b64encode(
+                hashlib.sha1((sec_key + self.websocket_guid).encode()).digest()
+            ).decode()
+            print(f"[WebSocket握手] 生成Sec-WebSocket-Accept: {accept_key}")
+            
+            response = (
+                f"HTTP/1.1 101 Switching Protocols\r\n"
+                f"Upgrade: websocket\r\n"
+                f"Connection: Upgrade\r\n"
+                f"Sec-WebSocket-Accept: {accept_key}\r\n"
+                f"\r\n"
+            )
+            
+            client_socket.send(response.encode())
+            print(f"[WebSocket握手] 发送握手响应成功")
+            return True
+            
+        except Exception as e:
+            print(f"[WebSocket握手] 异常 - {type(e).__name__}: {str(e)}")
+            self.add_message("错误", f"WebSocket握手失败：{str(e)}", 'error')
+            return False
+    
+    def websocket_recv(self, client_socket):
+        """接收WebSocket消息"""
+        try:
+            data = client_socket.recv(1024)
+            if not data:
+                print(f"[WebSocket接收] 空数据，连接可能已断开")
+                return None
+            
+            if len(data) < 2:
+                print(f"[WebSocket接收] 数据太短 ({len(data)} bytes): {data}")
+                return None
+            
+            fin = (data[0] >> 7) & 1
+            opcode = data[0] & 0x0F
+            mask = (data[1] >> 7) & 1
+            payload_len = data[1] & 0x7F
+            
+            print(f"[WebSocket接收] 帧信息 - fin: {fin}, opcode: {opcode}, mask: {mask}, payload_len: {payload_len}")
+            
+            if opcode == 8:
+                print(f"[WebSocket接收] 收到关闭帧")
+                return None
+            
+            index = 2
+            if payload_len == 126:
+                payload_len = int.from_bytes(data[index:index+2], 'big')
+                index += 2
+                print(f"[WebSocket接收] 扩展长度: {payload_len}")
+            elif payload_len == 127:
+                payload_len = int.from_bytes(data[index:index+8], 'big')
+                index += 8
+                print(f"[WebSocket接收] 扩展长度(64位): {payload_len}")
+            
+            if mask:
+                mask_key = data[index:index+4]
+                index += 4
+                print(f"[WebSocket接收] 掩码: {mask_key.hex()}")
+            
+            payload = data[index:index+payload_len]
+            print(f"[WebSocket接收] 原始payload长度: {len(payload)}, 预期: {payload_len}")
+            
+            if mask:
+                payload = bytes([payload[i] ^ mask_key[i % 4] for i in range(len(payload))])
+            
+            result = payload.decode('utf-8')
+            print(f"[WebSocket接收] 解码结果: '{result}'")
+            return result
+            
+        except socket.timeout:
+            print(f"[WebSocket接收] 接收超时")
+            return None
+        except Exception as e:
+            print(f"[WebSocket接收] 异常: {type(e).__name__}: {str(e)}")
+            return None
+    
+    def websocket_send(self, client_socket, message):
+        """发送WebSocket消息"""
+        try:
+            payload = message.encode('utf-8')
+            payload_len = len(payload)
+            
+            frame = bytearray()
+            frame.append(0x81)
+            
+            if payload_len < 126:
+                frame.append(payload_len)
+            elif payload_len < 65536:
+                frame.append(126)
+                frame.extend(payload_len.to_bytes(2, 'big'))
+            else:
+                frame.append(127)
+                frame.extend(payload_len.to_bytes(8, 'big'))
+            
+            frame.extend(payload)
+            
+            client_socket.send(frame)
+            return True
+            
+        except Exception as e:
+            return False
     
     def broadcast_message(self, message_dict):
         """向所有客户端广播消息"""
         message_json = json.dumps(message_dict, ensure_ascii=False)
-        message_bytes = message_json.encode('utf-8')
         
         disconnected_clients = []
         for client_socket in list(self.clients.keys()):
             try:
-                client_socket.send(message_bytes)
+                client_type = self.client_types.get(client_socket, 'tcp')
+                if client_type == 'websocket':
+                    # WebSocket客户端发送帧
+                    self.websocket_send(client_socket, message_json)
+                else:
+                    # TCP客户端发送原始数据
+                    message_bytes = message_json.encode('utf-8')
+                    client_socket.send(message_bytes)
             except:
                 disconnected_clients.append(client_socket)
         
